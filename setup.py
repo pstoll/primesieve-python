@@ -1,9 +1,16 @@
 from setuptools import setup, Extension
 from glob import glob
 
+# workaround for Python 2.7 with msvc
+import sys
+msvc_compat = "--msvc-compat" in sys.argv
+if msvc_compat:
+    sys.argv.remove("--msvc-compat")
+extra_includes = ["lib/primesieve/src/msvc_compat"] if msvc_compat else []
+
 library = ('primesieve', dict(
     sources=glob("lib/primesieve/src/primesieve/*.cpp"),
-    include_dirs=["lib/primesieve/include"],
+    include_dirs=["lib/primesieve/include"] + extra_includes,
     language="c++",
     ))
 
@@ -16,7 +23,7 @@ else:
 extension = Extension(
         "primesieve",
         ["primesieve/primesieve.pyx"] if cythonize else ["primesieve/primesieve.cpp"],
-        include_dirs=["lib/primesieve/include", "lib/primesieve/include/primesieve"],
+        include_dirs=["lib/primesieve/include", "lib/primesieve/include/primesieve"] + extra_includes,
         language="c++",
         )
 
