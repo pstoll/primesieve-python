@@ -8,6 +8,10 @@ class build_ext_subclass(build_ext):
         print(self)
         print(self.compiler)
         print(self.compiler.compiler_type)
+        print(self.compiler._MSVCCompiler__version)
+        if c.compiler.compiler_type == "msvc" and c._MSVCCompiler__version == "9.0":
+            for e in self.extensions + self.libraries:
+                e.include_dirs.append(["lib/primesieve/src/msvc_compat"])
         build_ext.build_extensions(self)
 
 library = ('primesieve', dict(
