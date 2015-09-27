@@ -3,29 +3,13 @@ from glob import glob
 from distutils.command.build_ext import build_ext
 from distutils.command.build_clib import build_clib
 
-class build_clib_subclass(build_clib):
-    def build_libraries(self, libraries):
-        if self.compiler.compiler_type == "msvc" and int(self.compiler._MSVCCompiler__version) <= 9:
-            for lib_name, build_info in libraries:
-                build_info['include_dirs'].append("lib/primesieve/src/msvc_compat")
-                print(build_info)
-        build_clib.build_libraries(self, libraries)
-
-
-class build_ext_subclass(build_ext):
-    def build_extensions(self):
-        if self.compiler.compiler_type == "msvc" and int(self.compiler._MSVCCompiler__version) <= 9:
-            for e in self.extensions:
-                e.include_dirs.append("lib/primesieve/src/msvc_compat")
-        build_ext.build_extensions(self)
-
 library = ('primesieve', dict(
     sources=glob("lib/primesieve/src/primesieve/*.cpp"),
     include_dirs=["lib/primesieve/include"],
     language="c++",
     ))
 
-if  glob("primesieve/*.pyx"):
+if glob("primesieve/*.pyx"):
     from Cython.Build import cythonize
 else:
     # fallback to compiled cpp
@@ -39,6 +23,23 @@ extension = Extension(
         )
 
 ext_modules = cythonize(extension) if cythonize else [extension]
+
+class build_clib_subclass(build_clib):
+    """Workaround to add msvc_compat (stdint.h) for old msvc versions"""
+    def build_libraries(self, libraries):
+        if self.compiler.compiler_type == "msvc" and int(self.compiler._MSVCCompiler__version) <= 9:
+            for lib_name, build_info in libraries:
+                build_info['include_dirs'].append("lib/primesieve/src/msvc_compat")
+                print(build_info)
+        build_clib.build_libraries(self, libraries)
+
+class build_ext_subclass(build_ext):
+    """Workaround to add msvc_compat (stdint.h) for old msvc versions"""
+    def build_extensions(self):
+        if self.compiler.compiler_type == "msvc" and int(self.compiler._MSVCCompiler__version) <= 9:
+            for e in self.extensions:
+                e.include_dirs.append("lib/primesieve/src/msvc_compat")
+        build_ext.build_extensions(self)
 
 setup(
     name='primesieve',
