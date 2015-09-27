@@ -1,5 +1,14 @@
 from setuptools import setup, Extension
 from glob import glob
+from setuptools import distutils
+from distutils.command.build_ext import build_ext
+
+class build_ext_subclass(build_ext):
+    def build_extensions(self):
+        print(self)
+        print(self.compiler)
+        print(self.compiler.compiler_type)
+        build_ext.build_extensions(self)
 
 library = ('primesieve', dict(
     sources=glob("lib/primesieve/src/primesieve/*.cpp"),
