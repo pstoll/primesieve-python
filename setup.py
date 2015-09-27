@@ -1,16 +1,10 @@
 from setuptools import setup, Extension
 from glob import glob
-from setuptools import distutils
 from distutils.command.build_ext import build_ext
 
 class build_ext_subclass(build_ext):
     def build_extensions(self):
-        print(self)
-        print(self.compiler)
-        print(self.compiler.compiler_type)
-        if c.compiler.compiler_type == "msvc":
-            print(self.compiler._MSVCCompiler__version)
-        if c.compiler.compiler_type == "msvc" and c._MSVCCompiler__version == "9.0":
+        if self.compiler.compiler_type == "msvc" and self._MSVCCompiler__version == "9.0":
             for e in self.extensions + self.libraries:
                 e.include_dirs.append(["lib/primesieve/src/msvc_compat"])
         build_ext.build_extensions(self)
