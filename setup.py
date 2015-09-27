@@ -39,6 +39,7 @@ setup(
     license = "MIT",
     libraries = [library],
     ext_modules = ext_modules,
+    cmdclass = {'build_ext': build_ext_subclass},
     classifiers=[
     'Programming Language :: Python :: 2',
     'Programming Language :: Python :: 2.6',
