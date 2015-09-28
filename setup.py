@@ -3,21 +3,19 @@ from glob import glob
 from distutils.command.build_ext import build_ext
 from distutils.command.build_clib import build_clib
 
-library = ('primesieve', dict(
-    sources=glob("lib/primesieve/src/primesieve/*.cpp"),
-    include_dirs=["lib/primesieve/include"],
-    language="c++",
-    ))
+sources = glob("lib/primesieve/src/primesieve/*.cpp")
 
 if glob("primesieve/*.pyx"):
     from Cython.Build import cythonize
+    sources.append("primesieve/primesieve.pyx")
 else:
     # fallback to compiled cpp
+    sources.append("primesieve/primesieve.cpp")
     cythonize = None
 
 extension = Extension(
         "primesieve",
-        ["primesieve/primesieve.pyx"] if cythonize else ["primesieve/primesieve.cpp"],
+        sources,
         include_dirs=["lib/primesieve/include", "lib/primesieve/include/primesieve"],
         language="c++",
         )
@@ -28,20 +26,16 @@ def old_msvc(compiler):
     """Test whether compiler is msvc <= 9.0"""
     return compiler.compiler_type == "msvc" and hasattr(compiler, "_MSVCCompiler__version") and int(compiler._MSVCCompiler__version) <= 9
 
-class build_clib_subclass(build_clib):
-    """Workaround to add msvc_compat (stdint.h) for old msvc versions"""
-    def build_libraries(self, libraries):
-        if old_msvc(self.compiler):
-            for lib_name, build_info in libraries:
-                build_info['include_dirs'].append("lib/primesieve/src/msvc_compat")
-                print(build_info)
-        build_clib.build_libraries(self, libraries)
-
 class build_ext_subclass(build_ext):
     """Workaround to add msvc_compat (stdint.h) for old msvc versions"""
     def build_extensions(self):
-        if old_msvc(self.compiler):
-            for e in self.extensions:
+        for e in self.extensions:
+            if self.compiler.compiler_type == "msvc":
+                e.extra_compile_args.append("/openmp")
+            elif self.compiler.compiler_type == "mingw32":
+                e.extra_compile_args.append("-fopenmp")
+
+            if old_msvc(self.compiler):
                 e.include_dirs.append("lib/primesieve/src/msvc_compat")
         build_ext.build_extensions(self)
 
@@ -51,9 +45,8 @@ setup(
     url = "https://github.com/hickford/primesieve-python",
     description="Fast prime number generator. Python bindings around C++ library primesieve",
     license = "MIT",
-    libraries = [library],
     ext_modules = ext_modules,
-    cmdclass = {'build_ext': build_ext_subclass, 'build_clib' : build_clib_subclass},
+    cmdclass = {'build_ext': build_ext_subclass},
     classifiers=[
     'Programming Language :: Python :: 2',
     'Programming Language :: Python :: 2.6',
