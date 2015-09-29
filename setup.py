@@ -26,15 +26,18 @@ def old_msvc(compiler):
     """Test whether compiler is msvc <= 9.0"""
     return compiler.compiler_type == "msvc" and hasattr(compiler, "_MSVCCompiler__version") and int(compiler._MSVCCompiler__version) <= 9
 
+extra_compile_args_by_compiler = {
+    "unix": ["-fopenmp"],
+    "cygwin": ["-fopenmp"],
+    "mingw32": ["-fopenmp"],
+    "msvc": ["/openmp"],
+}
+
 class build_ext_subclass(build_ext):
     """Workaround to add msvc_compat (stdint.h) for old msvc versions"""
     def build_extensions(self):
         for e in self.extensions:
-            if self.compiler.compiler_type == "msvc":
-                e.extra_compile_args.append("/openmp")
-            elif self.compiler.compiler_type == "mingw32":
-                e.extra_compile_args.append("-fopenmp")
-
+            e.extra_compile_args.extend(extra_compile_args_by_compiler.get(self.compiler.compiler_type, []))
             if old_msvc(self.compiler):
                 e.include_dirs.append("lib/primesieve/src/msvc_compat")
         build_ext.build_extensions(self)
