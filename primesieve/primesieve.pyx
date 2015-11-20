@@ -2,6 +2,66 @@ from libc.stdint cimport uint64_t, int64_t
 from libcpp.vector cimport vector
 cimport cpp_primesieve
 
+include "config.pxi"
+IF USE_NUMPY == 1:
+    cimport numpy as np
+    import numpy as np
+
+    np.import_array()
+
+    cpdef np.ndarray generate_primes_numpy(uint64_t a, uint64_t b = 0, out = None):
+        """Generate a list of primes between A and B into the numpy array OUT. 
+        If B is not specified or is zero, the interval (0,A) is used instead.
+
+        OUT can be None, in which case a new 1d array is allocated.
+        if provided, OUT must be a contiguous 1d array 
+           && must be large enough to hold the primes between (A,B)
+           IF either of thos conditions are not true, a new array will be allocated
+           for the output array
+        """
+        cdef vector[uint64_t] primes
+
+        # if b == 0, then a is the upper bound, so swap the indexes
+        if b == 0:
+            (a,b) = (0,a)
+
+        cpp_primesieve.generate_primes[uint64_t](a, b, &primes)
+        cdef uint64_t nn = primes.size()
+        
+        cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] out_array
+        if out is None or nn > out.shape[0]:
+            out_array = np.zeros([nn], dtype=np.uint64, order='c')
+        else:
+            # this only makes a copy if the input array is not already contiguous
+            out_array = np.ascontiguousarray(out)
+        cdef uint64_t ii = 0
+        
+        # the following direct access to the data assumes/requires a contiguous block of memory
+        # this is not always true for numpy arrays
+        cdef uint64_t *data = <uint64_t *>(np.PyArray_DATA(out_array))
+        for ii in range(0, nn):
+            data[ii] = primes[ii]
+        return out_array
+
+    cpdef np.ndarray generate_n_primes_numpy(uint64_t nn,
+                                             uint64_t start = 0,
+                                             out = None):
+        """Generate a list of primes into a numpy array"""
+        cdef np.ndarray[np.uint64_t, ndim=1] out_array
+
+        if out is None or nn > out.shape[0]:
+            out_array = np.zeros([nn], dtype=np.uint64, order='c')
+        else:
+            out_array = np.ascontiguousarray(out)
+            
+        cdef cpp_primesieve.iterator iter
+        iter = cpp_primesieve.iterator(start, start + nn)
+        cdef uint64_t ii = 0
+        for ii in range(0, nn):
+            out_array[ii] = iter.next_prime()
+        return out_array
+
+
 cpdef vector[uint64_t] generate_primes(uint64_t a, uint64_t b = 0) except +:
     """Generate a list of primes"""
     cdef vector[uint64_t] primes
