@@ -7,7 +7,6 @@ cpdef vector[uint64_t] generate_primes(uint64_t a, uint64_t b = 0) except +:
     cdef vector[uint64_t] primes
     if b == 0:
         (a,b) = (0,a)
-
     cpp_primesieve.generate_primes[uint64_t](a, b, &primes)
     return primes
 
