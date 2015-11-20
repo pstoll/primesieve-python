@@ -1,5 +1,6 @@
-from setuptools import setup, Extension
 from glob import glob
+import os
+from setuptools import setup, Extension
 from distutils.command.build_ext import build_ext
 from distutils.command.build_clib import build_clib
 
@@ -9,16 +10,42 @@ library = ('primesieve', dict(
     language="c++",
     ))
 
+# these become cython c compile time flags for conditional compilation
+c_options = { 
+    'use_numpy': 0
+}
+
+# try to import numpy
+try:
+    import numpy
+    np_include_path = [numpy.get_include()]
+    c_options['use_numpy'] = 1
+except:
+    numpy = None
+    np_include_path = []
+
+def generate_cython_c_config_file():
+    print('Generate config.pxi')
+    d = os.path.dirname(__file__)
+    config_file_name = os.path.join(  d , 'primesieve', 'config.pxi')
+    with open(config_file_name, 'w') as fd:
+        for k, v in c_options.items():
+            fd.write('DEF %s = %d\n' % (k.upper(), int(v)))
+
+generate_cython_c_config_file()
+
 if glob("primesieve/*.pyx"):
     from Cython.Build import cythonize
+    EXT = 'pyx'                 # file extension to use if cython is installed
 else:
     # fallback to compiled cpp
     cythonize = None
+    EXT = 'cpp'                 # for distribution we include the generated cpp file, so use it for installation
 
 extension = Extension(
         "primesieve",
-        ["primesieve/primesieve.pyx"] if cythonize else ["primesieve/primesieve.cpp"],
-        include_dirs=["lib/primesieve/include", "lib/primesieve/include/primesieve"],
+        ["primesieve/primesieve.{}".format(EXT)],
+        include_dirs=["lib/primesieve/include", "lib/primesieve/include/primesieve"] + np_include_path,
         language="c++",
         )
 
