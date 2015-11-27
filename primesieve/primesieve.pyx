@@ -30,16 +30,16 @@ IF USE_NUMPY == 1:
         
         cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] out_array
         if out is None or nn > out.shape[0]:
-            out_array = np.zeros([nn], dtype=np.uint64, order='c')
+            out_array = np.empty([nn], dtype=np.uint64, order='c')
         else:
-            # this only makes a copy if the input array is not already contiguous
-            out_array = np.ascontiguousarray(out)
+            out_array = out
         cdef uint64_t ii = 0
         
         # the following direct access to the data assumes/requires a contiguous block of memory
         # this is not always true for numpy arrays
-        cdef uint64_t *data = <uint64_t *>(np.PyArray_DATA(out_array))
+        cdef uint64_t *data;
         for ii in range(0, nn):
+            data = <uint64_t *>(np.PyArray_GETPTR1(out_array, ii));
             data[ii] = primes[ii]
         return out_array
 
@@ -50,15 +50,18 @@ IF USE_NUMPY == 1:
         cdef np.ndarray[np.uint64_t, ndim=1] out_array
 
         if out is None or nn > out.shape[0]:
-            out_array = np.zeros([nn], dtype=np.uint64, order='c')
+            print("creating new output array")
+            out_array = np.empty([nn], dtype=np.uint64, order='c')
         else:
-            out_array = np.ascontiguousarray(out)
+            out_array = out
             
         cdef cpp_primesieve.iterator iter
         iter = cpp_primesieve.iterator(start, start + nn)
         cdef uint64_t ii = 0
+        cdef uint64_t *data;
         for ii in range(0, nn):
-            out_array[ii] = iter.next_prime()
+            data = <uint64_t *>(np.PyArray_GETPTR1(out_array, ii));
+            data[ii] = iter.next_prime()
         return out_array
 
 
