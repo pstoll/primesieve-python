@@ -40,7 +40,7 @@ IF USE_NUMPY == 1:
         cdef uint64_t *data;
         for ii in range(0, nn):
             data = <uint64_t *>(np.PyArray_GETPTR1(out_array, ii));
-            data[ii] = primes[ii]
+            data[0] = primes[ii]
         return out_array
 
     cpdef np.ndarray generate_n_primes_numpy(uint64_t nn,
@@ -61,7 +61,7 @@ IF USE_NUMPY == 1:
         cdef uint64_t *data;
         for ii in range(0, nn):
             data = <uint64_t *>(np.PyArray_GETPTR1(out_array, ii));
-            data[ii] = iter.next_prime()
+            data[0] = iter.next_prime()
         return out_array
 
 
